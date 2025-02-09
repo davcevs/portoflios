@@ -189,7 +189,7 @@ const MainComponent = () => {
               top: 0,
               bottom: window.innerHeight,
             }}
-            onDragEnd={(e, info) => handleIconDrag(app.id, info)}
+            onDragEnd={(_e, info) => handleIconDrag(app.id, info)}
             style={{
               position: "absolute",
               left: iconPositions[app.id]?.x || 0,

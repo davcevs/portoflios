@@ -1,11 +1,35 @@
-import React from "react";
+import { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Wifi, Battery, Volume2, Sun, Moon, Bluetooth } from "lucide-react";
 
-const QuickSettings = ({ isOpen, onClose }) => {
-  const [isDark, setIsDark] = React.useState(false);
-  const [volume, setVolume] = React.useState(75);
-  const [brightness, setBrightness] = React.useState(100);
+interface QuickSettingsProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const QuickSettings: React.FC<QuickSettingsProps> = ({ isOpen, onClose }) => {
+  const [isDark, setIsDark] = useState(false);
+  const [volume, setVolume] = useState(75);
+  const [brightness, setBrightness] = useState(100);
+  const quickSettingsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        quickSettingsRef.current &&
+        !quickSettingsRef.current.contains(event.target as Node)
+      ) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   const toggles = [
     { id: "wifi", icon: <Wifi />, label: "Wi-Fi", active: true },
@@ -19,8 +43,11 @@ const QuickSettings = ({ isOpen, onClose }) => {
     },
   ];
 
+  if (!isOpen) return null;
+
   return (
     <motion.div
+      ref={quickSettingsRef}
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 20, opacity: 0 }}

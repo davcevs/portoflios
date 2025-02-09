@@ -15,7 +15,7 @@ const Draggable = ({
   const [dragPosition, setDragPosition] = useState(position);
   const ref = useRef<HTMLDivElement>(null);
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseDown = () => {
     setIsDragging(true);
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
