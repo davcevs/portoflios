@@ -19,11 +19,11 @@ const SkillsContent = () => {
       icon: <Code />,
       title: "Technical Skills",
       skills: [
-        { name: "JavaScript/HTML/CSS", level: 90 },
-        { name: "React/Angular/Next.js", level: 85 },
-        { name: "Node.js/PostgreSQL", level: 80 },
+        { name: "JavaScript/HTML/CSS", level: 95 },
+        { name: "React/Angular/Next.js", level: 95 },
+        { name: "Node.js/PostgreSQL", level: 95 },
         { name: "Python/MongoDB", level: 75 },
-        { name: "Microsoft Office Suite", level: 95 },
+        { name: "Microsoft Office Suite", level: 70 },
       ],
     },
     multimedia: {
