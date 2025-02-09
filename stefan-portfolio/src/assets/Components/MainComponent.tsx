@@ -29,6 +29,7 @@ const MainComponent = () => {
   >({});
   const [currentBackground, setCurrentBackground] = useState(0);
   const { notifications, dismissNotification } = useNotifications();
+  const [maximizedWindows, setMaximizedWindows] = useState<string[]>([]);
 
   const backgrounds = [
     "https://preview.redd.it/6ynzij07ny571.jpg?width=3840&format=pjpg&auto=webp&s=3fa29e245e8f26a08b2e84144c0542c4e774efc3",
@@ -105,6 +106,14 @@ const MainComponent = () => {
           y: Math.random() * 100,
         },
       });
+    }
+  };
+
+  const toggleMaximize = (appId: string) => {
+    if (maximizedWindows.includes(appId)) {
+      setMaximizedWindows(maximizedWindows.filter((id) => id !== appId));
+    } else {
+      setMaximizedWindows([...maximizedWindows, appId]);
     }
   };
 
@@ -221,15 +230,15 @@ const MainComponent = () => {
             <AppWindow
               key={appId}
               app={{
-                title: app.title,
                 icon: app.icon,
+                title: app.title,
               }}
               onClose={() => closeWindow(appId)}
               isMinimized={minimizedWindows.includes(appId)}
+              isMaximized={maximizedWindows.includes(appId)}
               onMinimize={() => minimizeWindow(appId)}
-              onMaximize={() => maximizeWindow(appId)}
+              onMaximize={() => toggleMaximize(appId)}
               position={windowPositions[appId]}
-              isMaximized={false}
             >
               {app.content}
             </AppWindow>

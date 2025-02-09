@@ -35,7 +35,7 @@ const AboutContent = () => {
       >
         <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">
           <img
-            src="/api/placeholder/128/128"
+            src=".\src\assets\images\CV.jpg"
             alt="Stefan Davchev"
             className="w-full h-full object-cover"
           />
