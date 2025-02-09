@@ -21,15 +21,15 @@ const MainComponent = () => {
   const [isQuickSettingsOpen, setIsQuickSettingsOpen] = useState(false);
   const [openWindows, setOpenWindows] = useState<string[]>([]);
   const [minimizedWindows, setMinimizedWindows] = useState<string[]>([]);
-  const [windowPositions, setWindowPositions] = useState<
-    Record<string, WindowPosition>
-  >({});
   const [iconPositions, setIconPositions] = useState<
     Record<string, { x: number; y: number }>
   >({});
   const [currentBackground, setCurrentBackground] = useState(0);
   const { notifications, dismissNotification } = useNotifications();
-  const [maximizedWindows, setMaximizedWindows] = useState<string[]>([]);
+  const [activeWindow, setActiveWindow] = useState<string | null>(null);
+  const [windowStates, setWindowStates] = useState<
+    Record<string, WindowPosition>
+  >({});
 
   const backgrounds = [
     "https://preview.redd.it/6ynzij07ny571.jpg?width=3840&format=pjpg&auto=webp&s=3fa29e245e8f26a08b2e84144c0542c4e774efc3",
@@ -99,41 +99,84 @@ const MainComponent = () => {
   const openWindow = (appId: string) => {
     if (!openWindows.includes(appId)) {
       setOpenWindows([...openWindows, appId]);
-      setWindowPositions({
-        ...windowPositions,
+      setWindowStates((prev) => ({
+        ...prev,
         [appId]: {
-          x: Math.random() * 100,
-          y: Math.random() * 100,
+          x: Math.random() * (window.innerWidth - 800),
+          y: Math.random() * (window.innerHeight - 600),
+          width: 800,
+          height: 600,
+          isMaximized: false,
+          isMinimized: false,
+          zIndex:
+            Math.max(...Object.values(prev).map((w) => w.zIndex || 0), 0) + 1,
         },
-      });
+      }));
+      setActiveWindow(appId);
+    } else {
+      setWindowStates((prev) => ({
+        ...prev,
+        [appId]: {
+          ...prev[appId],
+          isMinimized: false,
+          zIndex:
+            Math.max(...Object.values(prev).map((w) => w.zIndex || 0), 0) + 1,
+        },
+      }));
+      setActiveWindow(appId);
     }
   };
 
   const toggleMaximize = (appId: string) => {
-    if (maximizedWindows.includes(appId)) {
-      setMaximizedWindows(maximizedWindows.filter((id) => id !== appId));
-    } else {
-      setMaximizedWindows([...maximizedWindows, appId]);
-    }
+    setWindowStates((prev) => ({
+      ...prev,
+      [appId]: {
+        ...prev[appId],
+        isMaximized: !prev[appId].isMaximized,
+      },
+    }));
   };
 
   const closeWindow = (appId: string) => {
-    setOpenWindows(openWindows.filter((id) => id !== appId));
-    setMinimizedWindows(minimizedWindows.filter((id) => id !== appId));
-  };
-
-  const minimizeWindow = (appId: string) => {
-    if (!minimizedWindows.includes(appId)) {
-      setMinimizedWindows([...minimizedWindows, appId]);
+    setOpenWindows((prev) => prev.filter((id) => id !== appId));
+    setWindowStates((prev) => {
+      const newStates = { ...prev };
+      delete newStates[appId];
+      return newStates;
+    });
+    if (activeWindow === appId) {
+      setActiveWindow(null);
     }
   };
 
+  const minimizeWindow = (appId: string) => {
+    setWindowStates((prev) => ({
+      ...prev,
+      [appId]: {
+        ...prev[appId],
+        isMinimized: true,
+      },
+    }));
+    setMinimizedWindows((prev) => [...prev, appId]);
+  };
+
   const maximizeWindow = (appId: string) => {
-    setMinimizedWindows(minimizedWindows.filter((id) => id !== appId));
+    setWindowStates((prev) => ({
+      ...prev,
+      [appId]: {
+        ...prev[appId],
+        isMinimized: false,
+        zIndex:
+          Math.max(...Object.values(prev).map((w) => w.zIndex || 0), 0) + 1,
+      },
+    }));
+    setMinimizedWindows((prev) => prev.filter((id) => id !== appId));
+    setActiveWindow(appId);
   };
 
   const toggleWindow = (appId: string) => {
-    if (minimizedWindows.includes(appId)) {
+    const windowState = windowStates[appId];
+    if (windowState.isMinimized) {
       maximizeWindow(appId);
     } else {
       minimizeWindow(appId);
@@ -224,7 +267,9 @@ const MainComponent = () => {
       <AnimatePresence>
         {openWindows.map((appId) => {
           const app = apps.find((a) => a.id === appId);
-          if (!app) return null;
+          const windowState = windowStates[appId];
+
+          if (!app || !windowState) return null;
 
           return (
             <AppWindow
@@ -234,11 +279,28 @@ const MainComponent = () => {
                 title: app.title,
               }}
               onClose={() => closeWindow(appId)}
-              isMinimized={minimizedWindows.includes(appId)}
-              isMaximized={maximizedWindows.includes(appId)}
+              isMinimized={windowState.isMinimized ?? false}
+              isMaximized={windowState.isMaximized ?? false}
               onMinimize={() => minimizeWindow(appId)}
               onMaximize={() => toggleMaximize(appId)}
-              position={windowPositions[appId]}
+              position={windowState}
+              zIndex={windowState.zIndex}
+              onFocus={() => {
+                if (activeWindow !== appId) {
+                  setActiveWindow(appId);
+                  setWindowStates((prev) => ({
+                    ...prev,
+                    [appId]: {
+                      ...prev[appId],
+                      zIndex:
+                        Math.max(
+                          ...Object.values(prev).map((w) => w.zIndex || 0),
+                          0
+                        ) + 1,
+                    },
+                  }));
+                }
+              }}
             >
               {app.content}
             </AppWindow>

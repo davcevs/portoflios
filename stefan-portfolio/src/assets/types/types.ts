@@ -10,6 +10,11 @@ export interface App {
 export interface WindowPosition {
   x: number;
   y: number;
+  width?: number;
+  height?: number;
+  isMaximized?: boolean;
+  isMinimized?: boolean;
+  zIndex?: number;
 }
 
 export interface AppWindowProps {
@@ -21,7 +26,19 @@ export interface AppWindowProps {
   onMinimize: () => void;
   onMaximize: () => void;
   isMinimized: boolean;
-  isMaximized?: boolean;
-  position?: WindowPosition;
+  isMaximized: boolean;
+  position: WindowState;
   children: ReactNode;
 }
+
+export interface WindowState {
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  isMaximized: boolean;
+  isMinimized: boolean;
+  zIndex: number;
+}
+
+
