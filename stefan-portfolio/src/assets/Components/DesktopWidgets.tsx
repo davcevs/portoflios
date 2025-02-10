@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from "react";
 import { motion } from "framer-motion";
-import { Music, Clock, Activity } from "lucide-react";
+import { Clock, Activity } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import {
   ClockWidgetProps,
@@ -8,35 +8,7 @@ import {
   SystemMonitorWidgetProps,
 } from "../types/types";
 import WeatherWidget from "./WeatherWidget";
-
-const MusicWidget = memo(() => (
-  <motion.div
-    whileHover={{ scale: 1.02 }}
-    className="bg-black/50 backdrop-blur-md rounded-lg p-4"
-  >
-    <div className="flex items-center gap-2 mb-2">
-      <Music className="h-4 w-4" />
-      <span className="text-sm">Now Playing</span>
-    </div>
-    <div className="flex items-center gap-4">
-      <div className="w-12 h-12 bg-white/10 rounded-md flex items-center justify-center">
-        <Music className="h-6 w-6" />
-      </div>
-      <div>
-        <h4 className="text-sm font-medium">Current Track</h4>
-        <p className="text-xs text-white/60">Artist Name</p>
-      </div>
-    </div>
-    <div className="mt-2 h-1 bg-white/10 rounded-full">
-      <motion.div
-        className="h-full bg-blue-500 rounded-full"
-        initial={{ width: "0%" }}
-        animate={{ width: "60%" }}
-        transition={{ duration: 20, repeat: Infinity }}
-      />
-    </div>
-  </motion.div>
-));
+import MusicWidget from "./MusicWidget";
 
 const ClockWidget = memo(({ time }: ClockWidgetProps) => (
   <motion.div
