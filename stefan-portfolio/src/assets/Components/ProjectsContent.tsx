@@ -11,21 +11,12 @@ import {
   Twitter,
   Twitch,
 } from "lucide-react";
-
-interface GitHubProject {
-  id: number;
-  name: string;
-  html_url: string;
-  description: string | null;
-  language: string | null;
-  stargazers_count: number;
-}
+import { GitHubProject } from "../types/types";
 
 const ProjectsContent = () => {
   const [activeTab, setActiveTab] = useState("web");
   const [githubProjects, setGithubProjects] = useState<GitHubProject[]>([]);
   const [loading, setLoading] = useState(true);
-  // const [selectedChannel, setSelectedChannel] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -248,7 +239,7 @@ const ProjectsContent = () => {
                   className="relative h-0 rounded-lg overflow-hidden"
                   style={{
                     paddingBottom:
-                      channel.name === "Davcev" ? "178%" : "56.25%",
+                      channel.name === "Davcev" ? "100%" : "56.25%",
                   }}
                 >
                   <iframe

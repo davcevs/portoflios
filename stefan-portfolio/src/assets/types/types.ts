@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 
 export interface App {
   id: string;
@@ -49,4 +49,24 @@ export interface GitHubProject {
   description: string | null;
   language: string | null;
   stargazers_count: number;
+}
+
+export interface Social {
+  platform: string;
+  url: string;
+  icon: JSX.Element;
+}
+
+export interface Channel {
+  name: string;
+  url: string;
+  description: string;
+  featuredVideo: string;
+  subscribers: string;
+  views: string;
+  videos: string;
+  joined: string;
+  location: string;
+  email: string;
+  socials: Social[];
 }
