@@ -83,3 +83,7 @@ export interface SystemMonitorWidgetProps {
 export interface ClockWidgetProps {
   time: Date;
 }
+
+export interface FileExplorerProps {
+  onClose: () => void;
+}

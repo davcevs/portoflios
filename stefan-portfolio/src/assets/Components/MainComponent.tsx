@@ -15,6 +15,10 @@ import Terminal from "./Terminal";
 import DesktopWidgets from "./DesktopWidgets";
 import NotificationSystem from "./NotificationSystem";
 import { useNotifications } from "../hooks/useNotifications";
+import FileExplorer from "./FileExplorer";
+import MemoryGame from "./MemoryGame";
+import SnakeGame from "./SnakeGame";
+// import RetroRacer from "./RetroRacer";
 
 const MainComponent = () => {
   const [isStartOpen, setIsStartOpen] = useState(false);
@@ -30,6 +34,7 @@ const MainComponent = () => {
   const [windowStates, setWindowStates] = useState<
     Record<string, WindowPosition>
   >({});
+  const [isFileExplorerOpen, setIsFileExplorerOpen] = useState(false);
 
   const backgrounds = [
     "https://preview.redd.it/6ynzij07ny571.jpg?width=3840&format=pjpg&auto=webp&s=3fa29e245e8f26a08b2e84144c0542c4e774efc3",
@@ -56,6 +61,12 @@ const MainComponent = () => {
       title: "Skills & Growth",
       icon: "📈",
       content: <SkillsContent />,
+    },
+    {
+      id: "memory-game",
+      title: "Memory Game",
+      icon: "🎮",
+      content: <MemoryGame />,
     },
     {
       id: "contact",
@@ -86,6 +97,18 @@ const MainComponent = () => {
       icon: "🖥️",
       content: <Terminal />,
     },
+    {
+      id: "Snake",
+      title: "Snake Game",
+      icon: "🐍",
+      content: <SnakeGame />,
+    },
+    // {
+    //   id: "retro-racer",
+    //   title: "Retro Racer",
+    //   icon: "🏎️",
+    //   content: <RetroRacer />,
+    // },
   ];
 
   useEffect(() => {
@@ -273,7 +296,6 @@ const MainComponent = () => {
           </motion.div>
         ))}
       </div>
-
       {/* App Windows */}
       <AnimatePresence>
         {openWindows.map((appId) => {
@@ -318,12 +340,19 @@ const MainComponent = () => {
           );
         })}
       </AnimatePresence>
+      {/* File Explorer */}
+      <AnimatePresence>
+        {isFileExplorerOpen && (
+          <FileExplorer onClose={() => setIsFileExplorerOpen(false)} />
+        )}
+      </AnimatePresence>
+      {/* Desktop Widgets */}
       <DesktopWidgets />
+      {/* Notification System */}
       <NotificationSystem
         notifications={notifications}
         onDismiss={dismissNotification}
-      />
-
+      />{" "}
       {/* Taskbar */}
       <div className="absolute bottom-0 left-0 right-0 h-12 bg-black/70 backdrop-blur-md flex items-center px-4 justify-between">
         <div className="flex items-center gap-2">
@@ -331,12 +360,19 @@ const MainComponent = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="p-2 rounded-md hover:bg-white/10"
-            onClick={() => {
-              setIsStartOpen(!isStartOpen);
-              setIsQuickSettingsOpen(false);
-            }}
+            onClick={() => setIsStartOpen(!isStartOpen)}
           >
             <Monitor className="h-6 w-6 text-white" />
+          </motion.button>
+
+          {/* File Explorer Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="p-2 rounded-md hover:bg-white/10"
+            onClick={() => setIsFileExplorerOpen(true)}
+          >
+            📁
           </motion.button>
 
           {/* Open Windows in Taskbar */}
@@ -362,13 +398,11 @@ const MainComponent = () => {
           </div>
         </div>
 
+        {/* System Tray */}
         <div className="flex items-center gap-4 text-white text-sm">
           <div
             className="flex items-center gap-2 px-3 py-1 rounded-md hover:bg-white/10 cursor-pointer"
-            onClick={() => {
-              setIsQuickSettingsOpen(!isQuickSettingsOpen);
-              setIsStartOpen(false);
-            }}
+            onClick={() => setIsQuickSettingsOpen(!isQuickSettingsOpen)}
           >
             <Wifi className="h-4 w-4" />
             <Battery className="h-4 w-4" />
@@ -380,7 +414,6 @@ const MainComponent = () => {
           </div>
         </div>
       </div>
-
       {/* Start Menu */}
       <AnimatePresence>
         {isStartOpen && (
@@ -392,7 +425,6 @@ const MainComponent = () => {
           />
         )}
       </AnimatePresence>
-
       {/* Quick Settings */}
       <AnimatePresence>
         {isQuickSettingsOpen && (
