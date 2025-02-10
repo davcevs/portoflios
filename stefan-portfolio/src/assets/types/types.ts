@@ -70,3 +70,16 @@ export interface Channel {
   email: string;
   socials: Social[];
 }
+
+export interface CpuUsageData {
+  value: number;
+  time: string;
+}
+
+export interface SystemMonitorWidgetProps {
+  cpuUsage: CpuUsageData[];
+}
+
+export interface ClockWidgetProps {
+  time: Date;
+}
