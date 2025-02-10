@@ -16,6 +16,8 @@ const CELL_SIZE = 20;
 const INITIAL_SPEED = 150; // Milliseconds per move
 const SPEED_INCREASE = 5;
 const SPEED_INCREASE_INTERVAL = 5;
+const SPEED_BOOST_MULTIPLIER = 20; // 20x speed boost
+const SPEED_BOOST_DURATION = 1000; // 1000ms speed boost duration
 
 const SnakeGame = () => {
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
@@ -26,11 +28,14 @@ const SnakeGame = () => {
   const [highScore, setHighScore] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [speed, setSpeed] = useState(INITIAL_SPEED);
+  const [isSpeedBoostActive, setIsSpeedBoostActive] = useState(false);
 
   // For smooth interpolation
   const [renderSnake, setRenderSnake] = useState<Position[]>(snake);
-  const animationFrameRef = useRef<number>(0);
-  const lastUpdateTimeRef = useRef<number>(0);
+  const animationFrameRef = useRef<number>(0); // Fix: Provide initial value
+  const lastUpdateTimeRef = useRef<number>(0); // Fix: Provide initial value
+  const lastDirectionRef = useRef<Direction | null>(null); // Track last direction for speed boost
+  const speedBoostTimeoutRef = useRef<number>(0); // Track speed boost timeout
 
   // Generate random food position
   const generateFood = useCallback((): Position => {
@@ -56,6 +61,9 @@ const SnakeGame = () => {
     setScore(0);
     setSpeed(INITIAL_SPEED);
     setIsPaused(false);
+    setIsSpeedBoostActive(false);
+    lastDirectionRef.current = null;
+    clearTimeout(speedBoostTimeoutRef.current);
   };
 
   // Handle keyboard controls
@@ -63,26 +71,46 @@ const SnakeGame = () => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (gameOver) return;
 
-      switch (e.key.toLowerCase()) {
-        case "w":
-        case "arrowup":
-          if (direction !== "DOWN") setDirection("UP");
-          break;
-        case "s":
-        case "arrowdown":
-          if (direction !== "UP") setDirection("DOWN");
-          break;
-        case "a":
-        case "arrowleft":
-          if (direction !== "RIGHT") setDirection("LEFT");
-          break;
-        case "d":
-        case "arrowright":
-          if (direction !== "LEFT") setDirection("RIGHT");
-          break;
-        case " ":
-          setIsPaused((prev) => !prev);
-          break;
+      const newDirection = (() => {
+        switch (e.key.toLowerCase()) {
+          case "w":
+          case "arrowup":
+            return "UP";
+          case "s":
+          case "arrowdown":
+            return "DOWN";
+          case "a":
+          case "arrowleft":
+            return "LEFT";
+          case "d":
+          case "arrowright":
+            return "RIGHT";
+          default:
+            return null;
+        }
+      })();
+
+      if (newDirection && newDirection !== direction) {
+        // Check for speed boost (double tap in the same direction)
+        if (newDirection === lastDirectionRef.current) {
+          setIsSpeedBoostActive(true);
+          setSpeed((prevSpeed) => prevSpeed / SPEED_BOOST_MULTIPLIER);
+
+          // Reset speed boost after duration
+          clearTimeout(speedBoostTimeoutRef.current);
+          speedBoostTimeoutRef.current = window.setTimeout(() => {
+            setIsSpeedBoostActive(false);
+            setSpeed((prevSpeed) => prevSpeed * SPEED_BOOST_MULTIPLIER);
+          }, SPEED_BOOST_DURATION);
+        }
+
+        setDirection(newDirection);
+        lastDirectionRef.current = newDirection;
+      }
+
+      // Pause/resume game
+      if (e.key === " ") {
+        setIsPaused((prev) => !prev);
       }
     };
 
@@ -308,6 +336,9 @@ const SnakeGame = () => {
       {/* Controls Instructions */}
       <div className="mt-4 text-white/70 text-sm">
         <p>Use arrow keys or WASD to move • Space to pause</p>
+        {isSpeedBoostActive && (
+          <p className="text-green-400">Speed Boost Active!</p>
+        )}
       </div>
     </div>
   );
