@@ -1,12 +1,13 @@
 import { useState, useEffect, memo } from "react";
 import { motion } from "framer-motion";
-import { Cloud, Sun, Music, Clock, Activity } from "lucide-react";
+import { Music, Clock, Activity } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import {
   ClockWidgetProps,
   CpuUsageData,
   SystemMonitorWidgetProps,
 } from "../types/types";
+import WeatherWidget from "./WeatherWidget";
 
 const MusicWidget = memo(() => (
   <motion.div
@@ -33,25 +34,6 @@ const MusicWidget = memo(() => (
         animate={{ width: "60%" }}
         transition={{ duration: 20, repeat: Infinity }}
       />
-    </div>
-  </motion.div>
-));
-
-const WeatherWidget = memo(() => (
-  <motion.div
-    whileHover={{ scale: 1.02 }}
-    className="bg-black/50 backdrop-blur-md rounded-lg p-4"
-  >
-    <div className="flex items-center gap-2 mb-2">
-      <Cloud className="h-4 w-4" />
-      <span className="text-sm">Weather</span>
-    </div>
-    <div className="flex items-center justify-between">
-      <div>
-        <div className="text-2xl font-bold">22°C</div>
-        <div className="text-sm text-white/60">Sunny</div>
-      </div>
-      <Sun className="h-6 w-6" />
     </div>
   </motion.div>
 ));
