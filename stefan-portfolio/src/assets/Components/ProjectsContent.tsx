@@ -245,9 +245,11 @@ const ProjectsContent = () => {
                 )}
 
                 <div
-                  className={`relative pb-[${
-                    channel.name === "Davcev" ? "178%" : "56.25%"
-                  }] h-0 rounded-lg overflow-hidden`}
+                  className="relative h-0 rounded-lg overflow-hidden"
+                  style={{
+                    paddingBottom:
+                      channel.name === "Davcev" ? "178%" : "56.25%",
+                  }}
                 >
                   <iframe
                     src={channel.featuredVideo}
