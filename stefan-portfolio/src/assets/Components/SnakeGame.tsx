@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, RotateCw, Pause, Play } from "lucide-react";
+import { Trophy, RotateCw, Pause, Play, Info } from "lucide-react";
 
 // Direction types
 type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
@@ -16,8 +16,8 @@ const CELL_SIZE = 20;
 const INITIAL_SPEED = 150; // Milliseconds per move
 const SPEED_INCREASE = 5;
 const SPEED_INCREASE_INTERVAL = 5;
-const SPEED_BOOST_MULTIPLIER = 20; // 20x speed boost
-const SPEED_BOOST_DURATION = 1000; // 1000ms speed boost duration
+const SPEED_BOOST_MULTIPLIER = 2; // 2x speed boost
+const SPEED_BOOST_DURATION = 500; // 500ms speed boost duration
 
 const SnakeGame = () => {
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
@@ -29,13 +29,14 @@ const SnakeGame = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [speed, setSpeed] = useState(INITIAL_SPEED);
   const [isSpeedBoostActive, setIsSpeedBoostActive] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   // For smooth interpolation
   const [renderSnake, setRenderSnake] = useState<Position[]>(snake);
-  const animationFrameRef = useRef<number>(0); // Fix: Provide initial value
-  const lastUpdateTimeRef = useRef<number>(0); // Fix: Provide initial value
-  const lastDirectionRef = useRef<Direction | null>(null); // Track last direction for speed boost
-  const speedBoostTimeoutRef = useRef<number>(0); // Track speed boost timeout
+  const animationFrameRef = useRef<number>(0);
+  const lastUpdateTimeRef = useRef<number>(0);
+  const lastDirectionRef = useRef<Direction | null>(null);
+  const speedBoostTimeoutRef = useRef<number>(0);
 
   // Generate random food position
   const generateFood = useCallback((): Position => {
@@ -43,7 +44,6 @@ const SnakeGame = () => {
       x: Math.floor(Math.random() * GRID_SIZE),
       y: Math.floor(Math.random() * GRID_SIZE),
     };
-    // Ensure food doesn't spawn on snake
     return snake.some(
       (segment) => segment.x === newFood.x && segment.y === newFood.y
     )
@@ -91,12 +91,10 @@ const SnakeGame = () => {
       })();
 
       if (newDirection && newDirection !== direction) {
-        // Check for speed boost (double tap in the same direction)
         if (newDirection === lastDirectionRef.current) {
           setIsSpeedBoostActive(true);
           setSpeed((prevSpeed) => prevSpeed / SPEED_BOOST_MULTIPLIER);
 
-          // Reset speed boost after duration
           clearTimeout(speedBoostTimeoutRef.current);
           speedBoostTimeoutRef.current = window.setTimeout(() => {
             setIsSpeedBoostActive(false);
@@ -108,7 +106,6 @@ const SnakeGame = () => {
         lastDirectionRef.current = newDirection;
       }
 
-      // Pause/resume game
       if (e.key === " ") {
         setIsPaused((prev) => !prev);
       }
@@ -175,7 +172,6 @@ const SnakeGame = () => {
             setScore((prev) => {
               const newScore = prev + 1;
               if (newScore > highScore) setHighScore(newScore);
-              // Increase speed every SPEED_INCREASE_INTERVAL points
               if (newScore % SPEED_INCREASE_INTERVAL === 0) {
                 setSpeed((prevSpeed) =>
                   Math.max(prevSpeed - SPEED_INCREASE, 50)
@@ -226,28 +222,50 @@ const SnakeGame = () => {
   ]);
 
   return (
-    <div className="flex flex-col items-center p-4 bg-gradient-to-br from-purple-900/20 to-blue-900/20 rounded-lg">
+    <div
+      className={`flex flex-col items-center p-4 ${
+        theme === "dark"
+          ? "bg-gradient-to-br from-purple-900/20 to-blue-900/20"
+          : "bg-gradient-to-br from-gray-100 to-gray-300"
+      } rounded-lg`}
+    >
       <div className="flex justify-between w-full mb-4">
         <div className="flex items-center gap-4">
           <motion.div
-            className="bg-white/10 p-2 rounded-lg flex items-center"
+            className={`p-2 rounded-lg flex items-center ${
+              theme === "dark" ? "bg-white/10" : "bg-black/10"
+            }`}
             whileHover={{ scale: 1.05 }}
           >
             <Trophy className="h-6 w-6 text-yellow-400" />
-            <span className="text-white ml-2">{score}</span>
+            <span
+              className={`ml-2 ${
+                theme === "dark" ? "text-white" : "text-black"
+              }`}
+            >
+              {score}
+            </span>
           </motion.div>
           <motion.div
-            className="bg-white/10 p-2 rounded-lg"
+            className={`p-2 rounded-lg ${
+              theme === "dark" ? "bg-white/10" : "bg-black/10"
+            }`}
             whileHover={{ scale: 1.05 }}
           >
-            <span className="text-white">High Score: {highScore}</span>
+            <span className={theme === "dark" ? "text-white" : "text-black"}>
+              High Score: {highScore}
+            </span>
           </motion.div>
         </div>
         <div className="flex gap-2">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            className="bg-white/10 p-2 rounded-lg text-white"
+            className={`p-2 rounded-lg ${
+              theme === "dark"
+                ? "bg-white/10 text-white"
+                : "bg-black/10 text-black"
+            }`}
             onClick={() => setIsPaused(!isPaused)}
           >
             {isPaused ? (
@@ -259,16 +277,51 @@ const SnakeGame = () => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            className="bg-white/10 p-2 rounded-lg text-white"
+            className={`p-2 rounded-lg ${
+              theme === "dark"
+                ? "bg-white/10 text-white"
+                : "bg-black/10 text-black"
+            }`}
             onClick={resetGame}
           >
             <RotateCw className="h-6 w-6" />
           </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className={`p-2 rounded-lg ${
+              theme === "dark"
+                ? "bg-white/10 text-white"
+                : "bg-black/10 text-black"
+            }`}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? "🌙" : "☀️"}
+          </motion.button>
         </div>
       </div>
 
+      {/* Feature Display */}
+      <div className="mb-4 w-full flex justify-center">
+        <motion.div
+          className={`p-2 rounded-lg flex items-center gap-2 ${
+            theme === "dark" ? "bg-white/10" : "bg-black/10"
+          }`}
+          whileHover={{ scale: 1.05 }}
+        >
+          <Info className="h-6 w-6 text-blue-400" />
+          <span className={theme === "dark" ? "text-white" : "text-black"}>
+            Features: 2x Speed Boost (double tap direction), Pause/Resume
+            (Space), Themes
+          </span>
+        </motion.div>
+      </div>
+
+      {/* Game Grid */}
       <div
-        className="relative bg-black/20 backdrop-blur-sm rounded-lg"
+        className={`relative ${
+          theme === "dark" ? "bg-black/20" : "bg-gray-200"
+        } backdrop-blur-sm rounded-lg`}
         style={{
           width: GRID_SIZE * CELL_SIZE,
           height: GRID_SIZE * CELL_SIZE,
@@ -314,7 +367,13 @@ const SnakeGame = () => {
             exit={{ opacity: 0, scale: 0.5 }}
             className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm"
           >
-            <div className="bg-white/10 backdrop-blur-md p-8 rounded-xl text-center text-white">
+            <div
+              className={`${
+                theme === "dark" ? "bg-white/10" : "bg-black/10"
+              } backdrop-blur-md p-8 rounded-xl text-center ${
+                theme === "dark" ? "text-white" : "text-black"
+              }`}
+            >
               <h2 className="text-3xl mb-4">Game Over!</h2>
               <p className="mb-4">Score: {score}</p>
               {score === highScore && score > 0 && (
@@ -323,7 +382,11 @@ const SnakeGame = () => {
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                className="bg-white/10 px-4 py-2 rounded-lg"
+                className={`px-4 py-2 rounded-lg ${
+                  theme === "dark"
+                    ? "bg-white/10 text-white"
+                    : "bg-black/10 text-black"
+                }`}
                 onClick={resetGame}
               >
                 Play Again
@@ -334,7 +397,11 @@ const SnakeGame = () => {
       </AnimatePresence>
 
       {/* Controls Instructions */}
-      <div className="mt-4 text-white/70 text-sm">
+      <div
+        className={`mt-4 text-sm ${
+          theme === "dark" ? "text-white/70" : "text-black/70"
+        }`}
+      >
         <p>Use arrow keys or WASD to move • Space to pause</p>
         {isSpeedBoostActive && (
           <p className="text-green-400">Speed Boost Active!</p>
