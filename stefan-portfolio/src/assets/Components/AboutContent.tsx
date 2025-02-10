@@ -35,7 +35,7 @@ const AboutContent = () => {
       >
         <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">
           <img
-            src=".\src\assets\images\CV.jpg"
+            src="https://media.licdn.com/dms/image/v2/D4D03AQHcaHLtP0OH1A/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1714396450438?e=1744848000&v=beta&t=TZAwAM_GIGI6bOtg-4ueJApMvVh-t4Y3QudFYPKqJzk"
             alt="Stefan Davchev"
             className="w-full h-full object-cover"
           />
