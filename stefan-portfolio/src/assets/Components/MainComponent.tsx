@@ -90,9 +90,20 @@ const MainComponent = () => {
 
   useEffect(() => {
     const initialPositions: Record<string, { x: number; y: number }> = {};
+    const iconSize = 120; // Approximate size of each icon including padding
+    const startX = 50; // Starting X position
+    const startY = 100; // Starting Y position
+
     apps.forEach((app, index) => {
-      initialPositions[app.id] = { x: 50, y: 100 + index * 100 };
+      const row = index < 3 ? 0 : 1; // First 3 icons in row 0, next 4 in row 1
+      const col = index < 3 ? index : index - 3; // Columns for row 0 (0-2) and row 1 (0-3)
+
+      initialPositions[app.id] = {
+        x: startX + col * iconSize,
+        y: startY + row * iconSize,
+      };
     });
+
     setIconPositions(initialPositions);
   }, []);
 
