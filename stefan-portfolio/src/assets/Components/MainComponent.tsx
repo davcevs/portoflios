@@ -16,7 +16,6 @@ import DesktopWidgets from "./DesktopWidgets";
 import NotificationSystem from "./NotificationSystem";
 import { useNotifications } from "../hooks/useNotifications";
 import FileExplorer from "./FileExplorer";
-import MemoryGame from "./MemoryGame";
 import SnakeGame from "./SnakeGame";
 // import RetroRacer from "./RetroRacer";
 
@@ -61,12 +60,6 @@ const MainComponent = () => {
       title: "Skills & Growth",
       icon: "📈",
       content: <SkillsContent />,
-    },
-    {
-      id: "memory-game",
-      title: "Memory Game",
-      icon: "🎮",
-      content: <MemoryGame />,
     },
     {
       id: "contact",
