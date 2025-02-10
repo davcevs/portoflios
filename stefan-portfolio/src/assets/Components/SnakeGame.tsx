@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, RotateCw, Pause, Play } from "lucide-react";
 
@@ -13,7 +13,7 @@ interface Position {
 
 const GRID_SIZE = 20;
 const CELL_SIZE = 20;
-const INITIAL_SPEED = 150;
+const INITIAL_SPEED = 150; // Milliseconds per move
 const SPEED_INCREASE = 5;
 const SPEED_INCREASE_INTERVAL = 5;
 
@@ -26,6 +26,11 @@ const SnakeGame = () => {
   const [highScore, setHighScore] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [speed, setSpeed] = useState(INITIAL_SPEED);
+
+  // For smooth interpolation
+  const [renderSnake, setRenderSnake] = useState<Position[]>(snake);
+  const animationFrameRef = useRef<number>(0);
+  const lastUpdateTimeRef = useRef<number>(0);
 
   // Generate random food position
   const generateFood = useCallback((): Position => {
@@ -44,6 +49,7 @@ const SnakeGame = () => {
   // Reset game state
   const resetGame = () => {
     setSnake([{ x: 10, y: 10 }]);
+    setRenderSnake([{ x: 10, y: 10 }]);
     setFood(generateFood());
     setDirection("RIGHT");
     setGameOver(false);
@@ -84,78 +90,112 @@ const SnakeGame = () => {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [direction, gameOver]);
 
-  // Game loop
+  // Game logic update
   useEffect(() => {
     if (gameOver || isPaused) return;
 
-    const moveSnake = () => {
-      setSnake((prevSnake) => {
-        const newSnake = [...prevSnake];
-        const head = { ...newSnake[0] };
+    const updateGame = () => {
+      const now = Date.now();
+      if (now - lastUpdateTimeRef.current >= speed) {
+        setSnake((prevSnake) => {
+          const newSnake = [...prevSnake];
+          const head = { ...newSnake[0] };
 
-        // Move head
-        switch (direction) {
-          case "UP":
-            head.y -= 1;
-            break;
-          case "DOWN":
-            head.y += 1;
-            break;
-          case "LEFT":
-            head.x -= 1;
-            break;
-          case "RIGHT":
-            head.x += 1;
-            break;
-        }
+          // Move head
+          switch (direction) {
+            case "UP":
+              head.y -= 1;
+              break;
+            case "DOWN":
+              head.y += 1;
+              break;
+            case "LEFT":
+              head.x -= 1;
+              break;
+            case "RIGHT":
+              head.x += 1;
+              break;
+          }
 
-        // Check wall collision
-        if (
-          head.x < 0 ||
-          head.x >= GRID_SIZE ||
-          head.y < 0 ||
-          head.y >= GRID_SIZE
-        ) {
-          setGameOver(true);
-          return prevSnake;
-        }
+          // Check wall collision
+          if (
+            head.x < 0 ||
+            head.x >= GRID_SIZE ||
+            head.y < 0 ||
+            head.y >= GRID_SIZE
+          ) {
+            setGameOver(true);
+            return prevSnake;
+          }
 
-        // Check self collision
-        if (
-          newSnake.some(
-            (segment) => segment.x === head.x && segment.y === head.y
-          )
-        ) {
-          setGameOver(true);
-          return prevSnake;
-        }
+          // Check self collision
+          if (
+            newSnake.some(
+              (segment) => segment.x === head.x && segment.y === head.y
+            )
+          ) {
+            setGameOver(true);
+            return prevSnake;
+          }
 
-        // Add new head
-        newSnake.unshift(head);
+          // Add new head
+          newSnake.unshift(head);
 
-        // Check food collision
-        if (head.x === food.x && head.y === food.y) {
-          setFood(generateFood());
-          setScore((prev) => {
-            const newScore = prev + 1;
-            if (newScore > highScore) setHighScore(newScore);
-            // Increase speed every SPEED_INCREASE_INTERVAL points
-            if (newScore % SPEED_INCREASE_INTERVAL === 0) {
-              setSpeed((prevSpeed) => Math.max(prevSpeed - SPEED_INCREASE, 50));
-            }
-            return newScore;
-          });
-        } else {
-          newSnake.pop();
-        }
+          // Check food collision
+          if (head.x === food.x && head.y === food.y) {
+            setFood(generateFood());
+            setScore((prev) => {
+              const newScore = prev + 1;
+              if (newScore > highScore) setHighScore(newScore);
+              // Increase speed every SPEED_INCREASE_INTERVAL points
+              if (newScore % SPEED_INCREASE_INTERVAL === 0) {
+                setSpeed((prevSpeed) =>
+                  Math.max(prevSpeed - SPEED_INCREASE, 50)
+                );
+              }
+              return newScore;
+            });
+          } else {
+            newSnake.pop();
+          }
 
-        return newSnake;
+          return newSnake;
+        });
+
+        lastUpdateTimeRef.current = now;
+      }
+
+      // Smooth interpolation for rendering
+      setRenderSnake((prevRenderSnake) => {
+        const interpolatedSnake = snake.map((segment, index) => {
+          const prevSegment = prevRenderSnake[index] || segment;
+          return {
+            x: prevSegment.x + (segment.x - prevSegment.x) * 0.2,
+            y: prevSegment.y + (segment.y - prevSegment.y) * 0.2,
+          };
+        });
+        return interpolatedSnake;
       });
+
+      animationFrameRef.current = requestAnimationFrame(updateGame);
     };
 
-    const gameInterval = setInterval(moveSnake, speed);
-    return () => clearInterval(gameInterval);
-  }, [direction, food, gameOver, generateFood, highScore, isPaused, speed]);
+    animationFrameRef.current = requestAnimationFrame(updateGame);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [
+    direction,
+    food,
+    gameOver,
+    generateFood,
+    highScore,
+    isPaused,
+    speed,
+    snake,
+  ]);
 
   return (
     <div className="flex flex-col items-center p-4 bg-gradient-to-br from-purple-900/20 to-blue-900/20 rounded-lg">
@@ -221,7 +261,7 @@ const SnakeGame = () => {
         />
 
         {/* Snake */}
-        {snake.map((segment, index) => (
+        {renderSnake.map((segment, index) => (
           <motion.div
             key={`${segment.x}-${segment.y}`}
             className="absolute bg-green-500 rounded-sm"
@@ -231,10 +271,8 @@ const SnakeGame = () => {
               left: segment.x * CELL_SIZE + 1,
               top: segment.y * CELL_SIZE + 1,
               backgroundColor: index === 0 ? "#22c55e" : "#4ade80",
+              transition: "left 0.1s linear, top 0.1s linear",
             }}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", duration: 0.2 }}
           />
         ))}
       </div>
