@@ -1,11 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, RotateCw, Pause, Play, Info } from "lucide-react";
+import { Trophy, RotateCw, Pause, Play } from "lucide-react";
 
-// Direction types
 type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
 
-// Position interface
 interface Position {
   x: number;
   y: number;
@@ -13,33 +11,35 @@ interface Position {
 
 const GRID_SIZE = 20;
 const CELL_SIZE = 20;
-const INITIAL_SPEED = 150; // Milliseconds per move
-const SPEED_INCREASE = 5;
+const INITIAL_SPEED = 200; // Base movement speed
+const SPEED_INCREASE = 10;
 const SPEED_INCREASE_INTERVAL = 5;
-const SPEED_BOOST_MULTIPLIER = 2; // 2x speed boost
-const SPEED_BOOST_DURATION = 500; // 500ms speed boost duration
+const SPEED_BOOST_MULTIPLIER = 2;
+const SPEED_BOOST_DURATION = 500; // 500ms boost duration
 
 const SnakeGame = () => {
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
+  const [renderSnake, setRenderSnake] = useState<Position[]>([
+    { x: 10, y: 10 },
+  ]);
   const [food, setFood] = useState<Position>({ x: 15, y: 15 });
   const [direction, setDirection] = useState<Direction>("RIGHT");
+  const [nextDirection, setNextDirection] = useState<Direction>("RIGHT");
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [speed, setSpeed] = useState(INITIAL_SPEED);
-  const [isSpeedBoostActive, setIsSpeedBoostActive] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [isSpeedBoostActive, setIsSpeedBoostActive] = useState(false);
 
-  // For smooth interpolation
-  const [renderSnake, setRenderSnake] = useState<Position[]>(snake);
-  const animationFrameRef = useRef<number>(0);
-  const lastUpdateTimeRef = useRef<number>(0);
+  const lastDirectionTimeRef = useRef<number>(0);
   const lastDirectionRef = useRef<Direction | null>(null);
   const speedBoostTimeoutRef = useRef<number>(0);
+  const lastUpdateTimeRef = useRef<number>(0);
+  const animationFrameRef = useRef<number>(0);
 
-  // Generate random food position
-  const generateFood = useCallback((): Position => {
+  const generateFood = (): Position => {
     const newFood = {
       x: Math.floor(Math.random() * GRID_SIZE),
       y: Math.floor(Math.random() * GRID_SIZE),
@@ -49,14 +49,14 @@ const SnakeGame = () => {
     )
       ? generateFood()
       : newFood;
-  }, [snake]);
+  };
 
-  // Reset game state
   const resetGame = () => {
     setSnake([{ x: 10, y: 10 }]);
     setRenderSnake([{ x: 10, y: 10 }]);
     setFood(generateFood());
     setDirection("RIGHT");
+    setNextDirection("RIGHT");
     setGameOver(false);
     setScore(0);
     setSpeed(INITIAL_SPEED);
@@ -71,39 +71,42 @@ const SnakeGame = () => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (gameOver) return;
 
-      const newDirection = (() => {
-        switch (e.key.toLowerCase()) {
+      const getNewDirection = (key: string): Direction | null => {
+        switch (key.toLowerCase()) {
           case "w":
           case "arrowup":
-            return "UP";
+            return direction !== "DOWN" ? "UP" : null;
           case "s":
           case "arrowdown":
-            return "DOWN";
+            return direction !== "UP" ? "DOWN" : null;
           case "a":
           case "arrowleft":
-            return "LEFT";
+            return direction !== "RIGHT" ? "LEFT" : null;
           case "d":
           case "arrowright":
-            return "RIGHT";
+            return direction !== "LEFT" ? "RIGHT" : null;
           default:
             return null;
         }
-      })();
+      };
 
-      if (newDirection && newDirection !== direction) {
-        if (newDirection === lastDirectionRef.current) {
+      const newDirection = getNewDirection(e.key);
+      if (newDirection) {
+        const now = Date.now();
+        // Check for double tap (same direction within 300ms)
+        if (
+          newDirection === lastDirectionRef.current &&
+          now - lastDirectionTimeRef.current < 300
+        ) {
           setIsSpeedBoostActive(true);
-          setSpeed((prevSpeed) => prevSpeed / SPEED_BOOST_MULTIPLIER);
-
           clearTimeout(speedBoostTimeoutRef.current);
           speedBoostTimeoutRef.current = window.setTimeout(() => {
             setIsSpeedBoostActive(false);
-            setSpeed((prevSpeed) => prevSpeed * SPEED_BOOST_MULTIPLIER);
           }, SPEED_BOOST_DURATION);
         }
-
-        setDirection(newDirection);
         lastDirectionRef.current = newDirection;
+        lastDirectionTimeRef.current = now;
+        setNextDirection(newDirection);
       }
 
       if (e.key === " ") {
@@ -115,45 +118,38 @@ const SnakeGame = () => {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [direction, gameOver]);
 
-  // Game logic update
+  // Smooth movement and game logic
   useEffect(() => {
     if (gameOver || isPaused) return;
 
-    const updateGame = () => {
-      const now = Date.now();
-      if (now - lastUpdateTimeRef.current >= speed) {
+    const updateGame = (timestamp: number) => {
+      const currentSpeed = isSpeedBoostActive
+        ? speed / SPEED_BOOST_MULTIPLIER
+        : speed;
+
+      // Update logical position at game speed
+      if (timestamp - lastUpdateTimeRef.current >= currentSpeed) {
         setSnake((prevSnake) => {
           const newSnake = [...prevSnake];
           const head = { ...newSnake[0] };
 
-          // Move head
-          switch (direction) {
+          setDirection(nextDirection);
+
+          switch (nextDirection) {
             case "UP":
-              head.y -= 1;
+              head.y = (head.y - 1 + GRID_SIZE) % GRID_SIZE;
               break;
             case "DOWN":
-              head.y += 1;
+              head.y = (head.y + 1) % GRID_SIZE;
               break;
             case "LEFT":
-              head.x -= 1;
+              head.x = (head.x - 1 + GRID_SIZE) % GRID_SIZE;
               break;
             case "RIGHT":
-              head.x += 1;
+              head.x = (head.x + 1) % GRID_SIZE;
               break;
           }
 
-          // Check wall collision
-          if (
-            head.x < 0 ||
-            head.x >= GRID_SIZE ||
-            head.y < 0 ||
-            head.y >= GRID_SIZE
-          ) {
-            setGameOver(true);
-            return prevSnake;
-          }
-
-          // Check self collision
           if (
             newSnake.some(
               (segment) => segment.x === head.x && segment.y === head.y
@@ -163,10 +159,8 @@ const SnakeGame = () => {
             return prevSnake;
           }
 
-          // Add new head
           newSnake.unshift(head);
 
-          // Check food collision
           if (head.x === food.x && head.y === food.y) {
             setFood(generateFood());
             setScore((prev) => {
@@ -186,71 +180,58 @@ const SnakeGame = () => {
           return newSnake;
         });
 
-        lastUpdateTimeRef.current = now;
+        lastUpdateTimeRef.current = timestamp;
       }
 
-      // Smooth interpolation for rendering
+      // Update visual position at 60 FPS
       setRenderSnake((prevRenderSnake) => {
-        const interpolatedSnake = snake.map((segment, index) => {
+        return snake.map((segment, index) => {
           const prevSegment = prevRenderSnake[index] || segment;
           return {
-            x: prevSegment.x + (segment.x - prevSegment.x) * 0.2,
-            y: prevSegment.y + (segment.y - prevSegment.y) * 0.2,
+            x: prevSegment.x + (segment.x - prevSegment.x) * 0.5,
+            y: prevSegment.y + (segment.y - prevSegment.y) * 0.5,
           };
         });
-        return interpolatedSnake;
       });
 
       animationFrameRef.current = requestAnimationFrame(updateGame);
     };
 
     animationFrameRef.current = requestAnimationFrame(updateGame);
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
+    return () => cancelAnimationFrame(animationFrameRef.current);
   }, [
-    direction,
     food,
     gameOver,
-    generateFood,
-    highScore,
     isPaused,
+    nextDirection,
     speed,
     snake,
+    highScore,
+    isSpeedBoostActive,
   ]);
 
   return (
     <div
       className={`flex flex-col items-center p-4 ${
-        theme === "dark"
-          ? "bg-gradient-to-br from-purple-900/20 to-blue-900/20"
-          : "bg-gradient-to-br from-gray-100 to-gray-300"
+        theme === "dark" ? "bg-gray-900" : "bg-gray-100"
       } rounded-lg`}
     >
       <div className="flex justify-between w-full mb-4">
         <div className="flex items-center gap-4">
           <motion.div
             className={`p-2 rounded-lg flex items-center ${
-              theme === "dark" ? "bg-white/10" : "bg-black/10"
+              theme === "dark" ? "bg-gray-800" : "bg-gray-200"
             }`}
-            whileHover={{ scale: 1.05 }}
           >
             <Trophy className="h-6 w-6 text-yellow-400" />
-            <span
-              className={`ml-2 ${
-                theme === "dark" ? "text-white" : "text-black"
-              }`}
-            >
+            <span className={theme === "dark" ? "text-white" : "text-black"}>
               {score}
             </span>
           </motion.div>
           <motion.div
             className={`p-2 rounded-lg ${
-              theme === "dark" ? "bg-white/10" : "bg-black/10"
+              theme === "dark" ? "bg-gray-800" : "bg-gray-200"
             }`}
-            whileHover={{ scale: 1.05 }}
           >
             <span className={theme === "dark" ? "text-white" : "text-black"}>
               High Score: {highScore}
@@ -263,8 +244,8 @@ const SnakeGame = () => {
             whileTap={{ scale: 0.9 }}
             className={`p-2 rounded-lg ${
               theme === "dark"
-                ? "bg-white/10 text-white"
-                : "bg-black/10 text-black"
+                ? "bg-gray-800 text-white"
+                : "bg-gray-200 text-black"
             }`}
             onClick={() => setIsPaused(!isPaused)}
           >
@@ -279,8 +260,8 @@ const SnakeGame = () => {
             whileTap={{ scale: 0.9 }}
             className={`p-2 rounded-lg ${
               theme === "dark"
-                ? "bg-white/10 text-white"
-                : "bg-black/10 text-black"
+                ? "bg-gray-800 text-white"
+                : "bg-gray-200 text-black"
             }`}
             onClick={resetGame}
           >
@@ -291,8 +272,8 @@ const SnakeGame = () => {
             whileTap={{ scale: 0.9 }}
             className={`p-2 rounded-lg ${
               theme === "dark"
-                ? "bg-white/10 text-white"
-                : "bg-black/10 text-black"
+                ? "bg-gray-800 text-white"
+                : "bg-gray-200 text-black"
             }`}
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
@@ -301,58 +282,39 @@ const SnakeGame = () => {
         </div>
       </div>
 
-      {/* Feature Display */}
-      <div className="mb-4 w-full flex justify-center">
-        <motion.div
-          className={`p-2 rounded-lg flex items-center gap-2 ${
-            theme === "dark" ? "bg-white/10" : "bg-black/10"
-          }`}
-          whileHover={{ scale: 1.05 }}
-        >
-          <Info className="h-6 w-6 text-blue-400" />
-          <span className={theme === "dark" ? "text-white" : "text-black"}>
-            Features: 2x Speed Boost (double tap direction), Pause/Resume
-            (Space), Themes
-          </span>
-        </motion.div>
-      </div>
-
       {/* Game Grid */}
       <div
         className={`relative ${
-          theme === "dark" ? "bg-black/20" : "bg-gray-200"
-        } backdrop-blur-sm rounded-lg`}
+          theme === "dark" ? "bg-gray-800" : "bg-gray-200"
+        } rounded-lg grid`}
         style={{
           width: GRID_SIZE * CELL_SIZE,
           height: GRID_SIZE * CELL_SIZE,
         }}
       >
         {/* Food */}
-        <motion.div
-          className="absolute bg-red-500 rounded-full"
+        <div
+          className="absolute bg-red-500"
           style={{
-            width: CELL_SIZE - 2,
-            height: CELL_SIZE - 2,
-            left: food.x * CELL_SIZE + 1,
-            top: food.y * CELL_SIZE + 1,
+            width: CELL_SIZE,
+            height: CELL_SIZE,
+            left: food.x * CELL_SIZE,
+            top: food.y * CELL_SIZE,
           }}
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: "spring" }}
         />
 
         {/* Snake */}
         {renderSnake.map((segment, index) => (
-          <motion.div
-            key={`${segment.x}-${segment.y}`}
-            className="absolute bg-green-500 rounded-sm"
+          <div
+            key={`${segment.x}-${segment.y}-${index}`}
+            className="absolute bg-green-500 transition-transform duration-[16ms]"
             style={{
-              width: CELL_SIZE - 2,
-              height: CELL_SIZE - 2,
-              left: segment.x * CELL_SIZE + 1,
-              top: segment.y * CELL_SIZE + 1,
+              width: CELL_SIZE,
+              height: CELL_SIZE,
+              transform: `translate(${segment.x * CELL_SIZE}px, ${
+                segment.y * CELL_SIZE
+              }px)`,
               backgroundColor: index === 0 ? "#22c55e" : "#4ade80",
-              transition: "left 0.1s linear, top 0.1s linear",
             }}
           />
         ))}
@@ -365,12 +327,12 @@ const SnakeGame = () => {
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.5 }}
-            className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 flex items-center justify-center bg-black/50"
           >
             <div
               className={`${
-                theme === "dark" ? "bg-white/10" : "bg-black/10"
-              } backdrop-blur-md p-8 rounded-xl text-center ${
+                theme === "dark" ? "bg-gray-800" : "bg-gray-200"
+              } p-8 rounded-xl text-center ${
                 theme === "dark" ? "text-white" : "text-black"
               }`}
             >
@@ -384,8 +346,8 @@ const SnakeGame = () => {
                 whileTap={{ scale: 0.9 }}
                 className={`px-4 py-2 rounded-lg ${
                   theme === "dark"
-                    ? "bg-white/10 text-white"
-                    : "bg-black/10 text-black"
+                    ? "bg-gray-700 text-white"
+                    : "bg-gray-300 text-black"
                 }`}
                 onClick={resetGame}
               >
@@ -399,7 +361,7 @@ const SnakeGame = () => {
       {/* Controls Instructions */}
       <div
         className={`mt-4 text-sm ${
-          theme === "dark" ? "text-white/70" : "text-black/70"
+          theme === "dark" ? "text-gray-400" : "text-gray-600"
         }`}
       >
         <p>Use arrow keys or WASD to move • Space to pause</p>
